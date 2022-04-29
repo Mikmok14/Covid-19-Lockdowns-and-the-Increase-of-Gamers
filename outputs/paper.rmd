@@ -1,0 +1,281 @@
+---
+title: Covid-19 Lockdowns and the Increase of Gamers^[Code and data are available at; https://github.com/Mikmok14/Covid-19-Lockdowns-and-the-Increase-of-Gamers.git]
+author: "Marco Chau"
+date: "March 30 2022"
+output:
+  bookdown::pdf_document2:
+    toc: true
+    fig_caption: yes
+header-includes:
+  \usepackage{float}
+  \floatplacement{figure}{H}
+abstract: "This paper uses PC gaming data extracted from the Steam Web API which details monthly average and peak concurrent player data for specific video games available on the Steam platform. The aim of this paper is to examine the impact of Covid-19 lockdowns on the PC gaming ecosystem. Results from the examination show that although peak concurrent players spike during lockdown, the peaks are not sustained for long. Average concurrent players in general increase and remains higher than pre-lockdown levels. \\par\\textbf{keywords:} Gaming, Steam, Covid-19"
+bibliography: references.bib
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(knitr)
+library(kableExtra) 
+library(data.table)
+library(scales)
+library(float)
+```
+
+```{r}
+load("outputs/Rdata/steam_charts.RDA")
+load("outputs/Rdata/steam_charts_small.RDA")
+load("outputs/Rdata/steam_charts_big.RDA")
+load("outputs/Rdata/steam_2019_table.RDA")
+load("outputs/RDATA/steam_2020_table.RDA")
+load("outputs/Rdata/steam_2022_table.RDA")
+load("outputs/Rdata/genre_2019.RdA")
+load("outputs/Rdata/genre_2020.RdA")
+load("outputs/Rdata/genre_2022.RdA")
+load("outputs/Rdata/genre.RDA")
+
+```
+
+
+\newpage
+# Introduction
+In 2020 alone, the gaming industry generated around $155 billion in revenue and remains one of the largest markets in the modern economy.^[Investopedia 2021] Platforms for video games ranges from personal computers, to smartphones, and consoles. The trend in the diversification of video game genres and themes in the past decade has led to an increase in the popularization of gaming. Although Covid-19 lockdowns slowed down many retail and service industries, digital markets such as streaming services saw a drastic increase in users. As developers have increasingly moved away from shipping games on physical discs and opt to use digital platforms such as Steam to distribute their games, video games has also become a digital product which may have benefited from Covid-19 lockdowns.
+
+  In this paper I examine the peak and average concurrent players per month of a sample of PC games before, during, and after Covid-19 lockdowns to determine the impact of the pandemic on the PC gaming industry. Through this analysis, we find that although concurrent players peak during lockdown months, it drops drastically as lockdown restrictions are lifted. Despite the fall in peak concurrent players, average concurrent players post-lockdown remains higher than levels pre-lockdown.
+
+  In section \@ref(data) we discuss the source of the data used in this paper, the strengths and weaknesses the source and methodology contains, and potential blind spots that the data misses. Section \@ref(results) presents player data on a few select games from the Steam store and their implications on relationship between lockdowns and PC-gaming are discussed in section \@ref(discussion).
+
+# Data
+
+## Key features
+The Steam playercount information is viewable using Steam's storefront application. The information counts the number of concurrent Steam users that are currently playing a specific game or using a specific application through the Steam platform. The count is pinged and recorded every periodically by Steam. The purpose for publishing information is to detect service disruptions on the platform.^[@steamstorestats] Data is collected from all online users playing games via the Steam platform. Players can opt out of having their play-status collected from this dataset by appearing offline. The dataset used for this paper contains the monthly average concurrent playercount, monthly peak playercount,, the absolute gain/loss of average monthly players, and the percentage gain/loss of average monthly players of 11 games on the Steam platform from July 2012 up to March 2022.
+
+## Source and Methodology
+The dataset was scraped from https://steamcharts.com/ using the `R programming language`^[@R] and the `rvest package`.^[@rvest] As of April 2022, the Steam platform has over 69,000 games released on the platform. To make this more manageable, 11 of the most popular games of the 69,000 games were selected for analysis. The games were selected based on genre, release date, and popularity. The popularity of the game was discerned using https://steam250.com/top250.^[@steamtop250] The website ranks games based on reviews and playercount. Only games released before 2019 were selected to ensure there is player data from before the Covid-19 pandemic. A mixture of singleplayer, competitive multiplayer, and cooperative multiplayer games were selected to determine whether a specific game genre was affected more than others. Once the data was scraped, it was cleaned using a variety of R-packages including: `tidyverse`^[@tidyverse], `dplyr`^[@dplyr], `ggplot2`^[@ggplot2], `kableextra`^[@kableextra], `data.table`^[@data.table], `scales`^[@scales], `lubridate`^[@lubridate], and `janitor`.^[@janitor] The game genre column was determined using tags for the games found on the Steam platform. Due to the difference in scale of playercounts between different games, the dataset was split into two to assist in readability. 
+
+  https://steamcharts.com/ itself gets the playercount data from Steam using its publicly available Steam Web API.^[steamapi] The website queries the number of concurrent players on an hourly basis written in the GO programming language. The data is stored and managed using PostgreSQL. The website is run and hosted by a private individual to assist in data analysis projects. The website has been running since July 2012 and there is no data available before this date.
+
+  The time period of March 2020 to September 2020 were chosen as the "lockdown" period for the purposes of this paper. Although these months are not representative of the beginning and end of Covid-19 lockdowns of all countries, they are the most common start and end date of first-wave lockdowns internationally.^[@lockdownbbc]
+
+## Strengths and Weaknesses
+
+A major strength of playercount data from SteamCharts is that the information is derived directly from Steam using the Steam Web API. Other Steam player count websites use a voluntary opt-in system that tracks Steam users' play status only if they find the website and input their steam information. The Steam Web API is provided directly by Steam for public access into their database containing playercount statistics and all Steam users are automatically opted in and counted. 
+
+  The playercount data provided by Steam is potentially misleading because not all counts are real players. Steam counts a 'player' when an individual account has the game or application running. This means users that leave their application running while not playing and 'bot' accounts running scripts to farm in-game items are also counted in these statistics. There is no way to discern between real players, bots, and idle accounts. 
+
+  The dataset is also unable to provide the amount of play-time each account logs. This means the dataset is useful for counting how many players there are, but not how long each player is engaged with the game for. Thus we can only make conclusions about the impact of Covid-19 lockdowns on the quantity of players, but not its impact on the duration of play.
+
+  Using Steam as a datasource alone to analyze trends in gaming during the lockdown is problematic because it is only one of many platforms for gaming in the market. Its biggest blindspot is the console gaming market. Steam is only available to Windows, Linux, and Mac operating systems. Console gaming devices from Nintendo, PlayStation, and Xbox run on their own proprietary platforms and Steam has no access to the playercount data on these platforms. Furthermore, Steam is not the only gaming platform available on PC. Alternatives include GOG, EA Origin, and GOG. That being said, Steam by far has the biggest market share across all the PC gaming platforms and has the most accessible data. 
+
+## Ethical Concerns
+The exclusion of console and other non-computer-based gaming systems such as handheld consoles and smartphones is not only a blindspot in the data, but poses an ethical concern regarding data transparency. The Big 3 console companies (PlayStation, Xbox, Nintendo) do not release their playercount information publicly, purposely obfuscating their onboarding statistics to prevent competitors from sizing up their precise marketshare. This causes an unethical underrepresentation of console gaming statistics and studies. Since the emergence of forums dedicated to video game discussion, the emergence of what is known colloquially as "console wars". This refers to the perceived superiority of gaming platform over the either. Since these forums are accessible only through the computer, fans of PC gaming are generally more represented than consoles. This overrepresentation led to the birth of the popular subreddit r/pcmasterrace, a popular forum for PC-related gaming content.^[@pcreddit] The term "PC Master Race" was coined to express the perceived objective superiority of PC gaming over consoles and handhelds. Console users are often referred to as "peasants" to emphasize their inferiority and references the class system of the medeival social structure.^[@pcmasterrace] The sole-availability of PC user statistics for analysis and discussion exacerbates the underrepresentation of console gaming issues and perspectives. This makes it difficult for console gamers to have a safe space to discuss their interests, and it prevents deep analysis of console gaming trends or issues such as the proliferation of the gambling-inducing loot boxes in video games targeted at younger audiences.
+
+
+## Peak Player-count
+
+```{r chartfig, echo=FALSE, fig.cap="Steam Playercount 2018 - 2022"}
+
+#Constructing graph
+steam_charts|>
+  ggplot(mapping = aes(x = Date, y = `Avg. Players`, color = Game)) +
+  geom_jitter() +
+  theme_minimal() +
+  labs(x = "Date",
+       y = "Average Player-count",
+       color = "Game",
+       caption = "Data source: Steam API.",
+       title = "Steam Playercount 2018 - 2022") +
+  scale_x_date(date_breaks = "1 month", date_labels = "%B-%Y") +
+  scale_y_continuous(label= comma) +
+      theme(axis.text.x = element_text(angle = 90, vjust = 1, hjust = 1, size = 5)) +
+  theme(legend.key.size = unit(0.2, "cm")) +
+  theme(legend.title = element_text(size = 8)) +
+  theme(legend.text = element_text(size = 5)) +
+#Adding vertical lines at lockdown dates
+geom_vline(xintercept = as.numeric(as.Date("2020-03-01")),
+           linetype = "longdash",
+           color = "black") +
+  geom_vline(xintercept = as.numeric(as.Date("2020-09-01")),
+             linetype = "longdash",
+             color = "black")
+```
+
+Figure \@ref(fig:chartfig) depicts the average playercount of 11 chosen PC games available on Steam from January 2019 to March 2022. From the dataset we discern that playercounts experience fluctuations throughout the year but generally hover around a median line and do not experience massive spikes nor massive drops in the playerbase. The two most popular games, Counter-Strike: Global Offensive (CS:GO) and Dota 2 experience the largest fluctuations. The playerbase of Player-Unknown's Battlegrounds experiences a steady decline throughout the time period. This is most likely due to the initial popularity of the game as the first of the now immensely popular battle-royale video-game genre which has now since been saturated by more popular competitor games taking away its playerbase such as Fortnite and Apex Legends. Most games visible on this graph experience a detectable increase in its playerbase during the initial Covid-19 lockdown in March of 2020, however more analysis needs to be done to examine whether this holds true for the games with smaller playercounts.
+
+```{r 2019tab, echo = FALSE}
+steam_2019_table |>
+  kable(
+    caption = "2019 April Steam Playercount",
+    digits = 1,
+    booktabs = TRUE,
+    linesep = "",
+  ) |>
+  kable_styling(latex_options = "HOLD_position") |>
+  column_spec(1:7, color = "black") |>
+  row_spec(0, color = "black")
+```
+
+```{r 2020tab, echo = FALSE}
+steam_2020_table |>
+  kable(
+    caption = "2020 April Steam Playercount",
+    digits = 1,
+    booktabs = TRUE,
+    linesep = "",
+  ) |>
+  kable_styling(latex_options = "HOLD_position") |>
+  kable_styling(latex_options = "scale_down") |>
+  column_spec(1:7, color = "black") |>
+  row_spec(0, color = "black")
+```
+
+```{r 2022tab, echo = FALSE}
+steam_2022_table |>
+  kable(
+    caption = "2022 March Steam Playercount",
+    digits = 1,
+    booktabs = TRUE,
+    linesep = "",
+  ) |>
+  kable_styling(latex_options = "HOLD_position") |>
+  column_spec(1:7, color = "black") |>
+  row_spec(0, color = "black")
+```
+
+Tables \@ref(tab:2019tab), \@ref(tab:2020tab), and \@ref(tab:2022tab) show playercount data of the 11 games in April of 2019, April of 2020, and March of 2022 respectively. April 2020 was chosen since it is a month into Covid-19 lockdowns which gives adjustment time for new players to onboard onto the Steam platform. April 2019 was chosen as a reference year to compare pre-Covid playerbase quantities with mid-Covid quantities. March 2022 was chosen since April 2022 data is unavailable at the time of this paper and it is representative of post-Covid lockdown player quantities to determine whether playercount quantities have increased in the long term after the end of strict lockdown measures. 
+
+  In 2019, most of the games are going through a period of playerbase decline across all genres. *Sid Meier's Civilization V* experienced a 30.88% drop, *Dota *2* experienced a 11.30% drop, and *Grant Theft Auto V* experienced a 19.47% drop in average playercount. The only games with a growing playerbase during this time are *Final Fantasy XIV*, *The Elder Scrolls V: Skyrim*, and *The Witcher 3: Wild Hunt*. Of these three games, only *The Witcher 3* experienced a double-digit growth at 15%.
+  
+  Table \@ref(tab:2020tab) for April 2020 shows a dramatic increase of playercount for all 11 of our selected games. Almost all 11 games show double-digit percentage growth except for *Grand Theft Auto V* at +8.33%, *Player-Unknown's Battlegrounds* at 6.29% and *Stardew Valley* at 9.36%. Of all the games, *Counter-Strike* experienced the most absolute growth, gaining around 186,571 players while *Eurotruck Simulator 2* experienced the most percentage growth at 39.49%. Also note that the peak number of players for April 2020 surpass the peak players in 2019.
+  
+  Table \@ref(tab:2022tab) for April 2022 shows a reversal of the trends seen in Table \@ref(tab:2020tab); in this table we see that all games experience a shrinking playerbase. That being said, a few games have retained a higher average playerbase and/or a higher peak playercount compared to 2020. *Final Fantasy XIV* had a peak 26373 players in April 2020 and 29126 in March of 2022. It also has a higher average playercount by around 900 across as well. 
+
+# Results
+
+```{r bigchartfig, fig.cap = "2019 - 2022 Player-Count for Large-Scale Games", echo = FALSE}
+steam_charts_big |>
+  ggplot(mapping = aes(x = Date, y = `Avg. Players`, color = Game)) +
+  geom_line() +
+  labs(x = "Date",
+       y = "Average Player-count",
+       color = "Game",
+       title = "Playercount for Large-Playerbase Games") +
+  scale_x_date(date_breaks = "1 month", date_labels = "%B-%Y") +
+  scale_y_continuous(label = comma) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 1, hjust = 1, size = 5)) +
+    theme(legend.key.size = unit(0.2, "cm")) +
+  theme(legend.title = element_text(size = 8)) +
+  theme(legend.text = element_text(size = 5)) +
+  #Adding vertical lines at lockdown dates
+geom_vline(xintercept = as.numeric(as.Date("2020-03-01")),
+           linetype = "longdash",
+           color = "black") +
+  geom_vline(xintercept = as.numeric(as.Date("2020-09-01")),
+             linetype = "longdash",
+             color = "black")
+```
+
+Figure \@ref(fig:bigchartfig) depicts the average playercounts for 4 of the largest games in the dataset by player quantity: *Counter-Strike*, *Dota 2*, *Grand Theft Auto V*, and *Player-Unknown's Battlegrounds*. After separating this from the small-scale games, the figure shows that all 4 games experienced an increase in average playercount at the start of the Covid-19 lockdowns, i.e. March of 2020. Although *Counter-Strike* and *Dota 2* were already experiencing growth before the pandemic, the increase in steepness is evidence of increased growth after lockdown begins. *Grand Theft Auto V* and *Player-Unknown's Battlegrounds* were experiencing shrinkage before the start of lockdowns, but experience a reversal once lockdowns began. At the end of lockdowns, i.e. September of 2020, all 4 games drop to levels similar to pre-lockdown quantities. 
+
+```{r smallchartfig, fig.cap = "Playercount for Small-playerbase Games", echo = FALSE}
+steam_charts_small |>
+  ggplot(mapping = aes(x = Date, y = `Avg. Players`, color = Game)) +
+  geom_line(position = "dodge") +
+  labs(x = "Date",
+       y = "Average Player-count",
+       color = "Game",
+       title = "Playercount for Small-Playerbase Games") +
+  scale_x_date(date_breaks = "1 month", date_labels = "%B-%Y") +
+  scale_y_continuous(label = comma) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 1, hjust = 1, size = 5)) +
+  theme(legend.key.size = unit(0.2, "cm")) +
+  theme(legend.title = element_text(size = 8)) +
+  theme(legend.text = element_text(size = 5)) +
+  #Adding vertical lines at lockdown dates
+geom_vline(xintercept = as.numeric(as.Date("2020-03-01")),
+           linetype = "longdash",
+           color = "black") +
+  geom_vline(xintercept = as.numeric(as.Date("2020-09-01")),
+             linetype = "longdash",
+             color = "black")
+```
+
+Figure \@ref(fig:smallchartfig) illustrates the average playercount statistics for the smaller-scale games in the dataset. Similar to our observations in Figure \@ref(fig:bigchartfig), all the games in this graph also experience an increase in playercount once lockdowns begin in March of 2020, although the magnitude of increase does vary. Most games on this scale also return to pre-lockdown player quantities once lockdown measures are eased in September of 2020 except for *Left 4 Dead 2*. The playerbase for  this game continues to grow a bit past September of 2020 and levels off in the months following.
+
+```{r 2019genretab, echo=FALSE}
+genre_2019 |>
+  kable(
+    caption = "2019 Genre Average Growth Rate",
+    digits = 1,
+    booktabs = TRUE,
+    linesep = "",
+  ) |>
+  kable_styling(latex_options = "HOLD_position") |>
+  kable_styling(latex_options = "scale_down") |>
+  column_spec(1:2, color = "black") |>
+  row_spec(0, color = "black")
+```
+
+
+
+```{r 2020genretab, echo= FALSE}
+genre_2020 |>
+  kable(
+    caption = "2020 Genre Average Growth Rate",
+    digits = 1,
+    booktabs = TRUE,
+    linesep = "",
+  ) |>
+  kable_styling(latex_options = "HOLD_position") |>
+  kable_styling(latex_options = "scale_down") |>
+  column_spec(1:2, color = "black") |>
+  row_spec(0, color = "black")
+
+```
+
+```{r 2022genretab, echo= FALSE}
+genre_2022 |>
+  kable(
+    caption = "2022 Genre Average Growth Rate",
+    digits = 1,
+    booktabs = TRUE,
+    linesep = "",
+  ) |>
+  kable_styling(latex_options = "HOLD_position") |>
+  kable_styling(latex_options = "scale_down") |>
+  column_spec(1:2, color = "black") |>
+  row_spec(0, color = "black")
+
+```
+
+Tables \@ref(tab:2019genretab), \@ref(tab:2020genretab), and \@ref(tab:2022genretab) include the average percentage gain in playercounts of singleplayer, multiplayer, and cooperative games from 2019, 2020, and 2022. Tables \@ref(tab:2019genretab) and \@ref(tab:2022genretab) reveal that on average games of all genres experienced shrinking playercounts. Multiplayer and cooperative games were experiencing the most shrinkage in 2019, each losing around 9.2% and 6.9% of their players respectively. During the lockdown in 2020, singleplayer games experienced the most percentage growth in players, gaining 23.2% more players. Post-Covid, however, singleplayer games also experienced the most percentage loss in players at -13%. 
+
+```{r genrefig, fig.cap = "Average Percentage Growth of Game Genres 2019 - 2022", echo = FALSE}
+genre |>
+  ggplot(mapping = aes(x = Year, y = `Average % Gain`, fill = Genre)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  labs(x = "Date",
+       y = "Average Percentage Growth Rate",
+       fill = "Game",
+       title = "Average Percentage Growth of Game Genres") +
+  scale_x_continuous() +
+  theme_bw()
+```
+
+Figure \@ref(fig:genrefig) depicts the average percentage growth of the three game genres from 2019 to 2022. Although all game genres experienced growth during the lockdown, singleplayer games experienced the most growth, followed by multiplayer games then cooperative games. Singleplayer games had almost double the growth of cooperative games. All three game genres experienced shrinkage in 2022 in the same order. However, compared to pre-Covid lockdowns, singleplayer playercounts went down at more than double the rate post-Covid lockdowns. The growth rate of playercounts for all genres slow down dramatically in 2021, with singleplayer games still in the lead just shy at 5%. Multiplayergames experienced practically no growth during 2021.
+
+# Discussion
+Examining the playercount statistics for both individual games and game genres suggests that although Covid-19 lockdowns led to a large influx of people playing video games, the influx did not translate to long-term retention of more gamers for the platform. Almost all games returned to the pre-lockdown levels of players once lockdowns ended in September of 2020. Examining player statistics if 2019 from Figure \@ref(fig:smallchartfig) suggest that the March to April is generally a period of playerbase shrinkage. The start of Covid lockdowns during the same months in 2020 disrupted the regular playerbase cycle and caused an increase instead. However, after lockdowns ended the playercounts returned to its cyclical pattern with some games having an overall slightly higher playerbase than before but nowhere near the peak during lockdowns. During the height of lockdowns, many digital entertainment analysts suggest that the pandemic will cause a shift from traditional in-person entertainment to digital entertainment forms such as streaming and video game services instead.^[@streamingref] This assumption led to assumptions that movie theatres, and arcades would become obsolete and more funding should be allocated to the digital entertainment industry to accomodate the newfound demand. However, as the pandemic lockdowns draw to a close consumers are showing a preference for returning to pre-lockdown levels of digital-entertainment consumption shown by the shrinkage of video game playercounts and Netflix's record loss of subscribers in the first quarter of 2022.^[@netflixref]
+
+  The low retention rate of singleplayer games is unsurprising compared to multiplayer and cooperative games. Singleplayer games such as *Skyrim* and *The Witcher* are story-driven role-playing games. These traditionally have low retention rate as players usually put them down for a long time after beating them. It can take years before users replay a singleplayer experience - if it ever happens. Competitive multiplayer games are expected to experience more retention and less shrinkage because their entertainment comes from competition against othere players and improving individual skill. This encourages players to continue playing the game as being paired with different players of different skill levels leads to varied gameplay experiences. Surprisingly, cooperative games experienced the least amount of growth and shrinkage during and after the Covid-19 lockdowns. This suggests that although cooperative games were less attractive to newcomers, players that did start playing coopetive multiplayer games were more inclined to continue playing them even after lockdown restrictions were eased. This may be due to the social aspect of cooperative games; they provide a backdrop for players to meet new friends and interact with existing friends to pass the time. This also adds peer pressure to continue playing to avoid the risk of losing a point of contact with peers.
+
+## Conclusion
+Contrary to speculative beliefs during the height of the pandemic, the large influx of new consumers to digital entertainment platforms such as video games have not received a permanent increase in users even after the padenmic restrictions drew to a close. The low retention rate of new gamers suggests that existing titles in the video game markets are failing to attract consumers that aren't already interested in the market. To further expand the market and get more people interested in video games, developers should expand in genres and target demographics that are't currently being explored. Although gender data is unavailable in the Steam Web API, the well-documented underrepresentation of female perspectives and the overreliance of male-orientated video game development perspectives has made gaming a male-dominated consumer market.^[@womengamesref] The failure to retain more gamers despite more people entering the market due to Covid-19 lockdowns is a worrisome sign that the games industry is not innovating in the right places despite major leaps in graphical and technical fidelity. 
+
+\newpage
+# References
+
+
